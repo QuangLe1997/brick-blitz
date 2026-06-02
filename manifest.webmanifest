@@ -1,0 +1,17 @@
+{
+  "name": "Brick Blitz — Metal Tetris",
+  "short_name": "Brick Blitz",
+  "description": "A glossy metal Tetris. Stack blocks, clear lines, survive the speed blitz!",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b071c",
+  "theme_color": "#1a1033",
+  "categories": ["games", "casual", "puzzle"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
