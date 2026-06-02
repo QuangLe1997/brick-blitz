@@ -112,15 +112,23 @@ class _AudioManager {
   playMove() { this._tone({ freq: 320, type: 'square', dur: 0.04, decay: 0.04, vol: 0.06 }); }
   playRotate() { this._tone({ freq: 520, type: 'square', dur: 0.05, decay: 0.05, vol: 0.1, freqEnd: 700 }); }
   playHold() { this._tone({ freq: 300, type: 'triangle', dur: 0.08, decay: 0.08, vol: 0.12, freqEnd: 460 }); }
+  // satisfying metal-on-metal clank: low body thud + inharmonic (bell/anvil) partials
+  _metalHit(intensity = 0.5, pitch = 1) {
+    if (!this.settings.sfx) return;
+    const v = 0.6 + intensity * 0.5;
+    this._tone({ freq: 132 * pitch, type: 'sine', dur: 0.11, decay: 0.1, vol: 0.13 * v, freqEnd: 64 * pitch });
+    const base = (470 + Math.random() * 70) * pitch;
+    [1, 2.74, 4.98, 7.4].forEach((r, i) => this._tone({ freq: base * r, type: i < 2 ? 'triangle' : 'square', dur: 0.14, decay: 0.12, vol: (0.085 * v) / (1 + i * 0.8) }));
+    setTimeout(() => this._tone({ freq: base * 3.4, type: 'square', dur: 0.04, decay: 0.04, vol: 0.045 * v }), 8); // bright ting
+  }
   playLock() {
-    this._tone({ freq: 180, type: 'square', dur: 0.06, decay: 0.06, vol: 0.14, freqEnd: 90 });
-    setTimeout(() => this._tone({ freq: 1200, type: 'square', dur: 0.03, decay: 0.03, vol: 0.05 }), 4);
+    this._metalHit(0.45, 1.05);
     if (this.settings.vibe && navigator.vibrate) navigator.vibrate(12);
   }
   playHardDrop() {
-    this._tone({ freq: 150, type: 'sawtooth', dur: 0.1, decay: 0.09, vol: 0.18, freqEnd: 55 });
-    setTimeout(() => this._tone({ freq: 1500, type: 'square', dur: 0.03, decay: 0.03, vol: 0.06 }), 6);
-    if (this.settings.vibe && navigator.vibrate) navigator.vibrate(22);
+    this._metalHit(1, 0.82);
+    this._tone({ freq: 88, type: 'sawtooth', dur: 0.14, decay: 0.13, vol: 0.2, freqEnd: 42 }); // heavy slam
+    if (this.settings.vibe && navigator.vibrate) navigator.vibrate([16, 28, 12]);
   }
   playLineClear(n = 1) {
     if (!this.settings.sfx) return;

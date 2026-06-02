@@ -18,7 +18,7 @@ export class Renderer3D {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.28;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0a0a1e);
@@ -29,9 +29,10 @@ export class Renderer3D {
 
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 300);
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-7, 14, 16); this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0x88aaff, 0.7); fill.position.set(9, -3, 10); this.scene.add(fill);
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    this.scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x223052, 0.85)); // fresh sky/ground fill
+    const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(-7, 14, 16); this.scene.add(key);
+    const fill = new THREE.DirectionalLight(0x9ec3ff, 0.95); fill.position.set(9, -3, 10); this.scene.add(fill);
 
     this.group = new THREE.Group();
     this.scene.add(this.group);
@@ -41,7 +42,7 @@ export class Renderer3D {
     const MAX = this.COLS * this.ROWS + 16;
     this.meshes = {};
     for (const k of KEYS) {
-      const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(METAL[k].mid), metalness: 0.98, roughness: 0.26 });
+      const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(METAL[k].mid), metalness: 1.0, roughness: 0.15, clearcoat: 0.7, clearcoatRoughness: 0.1, envMapIntensity: 1.55 });
       const inst = new THREE.InstancedMesh(geo, mat, MAX);
       inst.count = 0; inst.frustumCulled = false;
       this.group.add(inst);
@@ -65,12 +66,12 @@ export class Renderer3D {
     const w = this.COLS, h = this.ROWS;
     const back = new THREE.Mesh(
       new THREE.PlaneGeometry(w + 0.7, h + 0.7),
-      new THREE.MeshStandardMaterial({ color: 0x0d1130, metalness: 0.2, roughness: 0.85 })
+      new THREE.MeshStandardMaterial({ color: 0x24305e, metalness: 0.25, roughness: 0.8 })
     );
     back.position.set(0, 0, -0.85);
     this.group.add(back);
 
-    const railMat = new THREE.MeshStandardMaterial({ color: 0x3a4276, metalness: 0.95, roughness: 0.2 });
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x6c7fc8, metalness: 0.95, roughness: 0.18 });
     const railGeo = new THREE.BoxGeometry(0.32, h + 0.9, 1.3);
     const left = new THREE.Mesh(railGeo, railMat); left.position.set(-(w / 2) - 0.16, 0, -0.15); this.group.add(left);
     const right = left.clone(); right.position.x = (w / 2) + 0.16; this.group.add(right);
@@ -85,17 +86,31 @@ export class Renderer3D {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     // fit so the ROWS-tall board fills ~78% of the view height (matches the 2D layout)
-    const viewH = this.ROWS / 0.9;   // board fills ~90% of the height (no side panels now)
+    const viewH = this.ROWS / 0.97;  // fill almost the full height → small side padding
     const dist = (viewH / 2) / Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-    this.camera.position.set(0, 3.4, dist);
-    this.camera.lookAt(0, 1.3, 0); // tilt to show cube tops; shift board down to clear the HUD
+    this.camera.position.set(0, 2.6, dist);
+    this.camera.lookAt(0, 0.5, 0); // mild tilt to show cube tops, tiny downshift
     this.camera.updateProjectionMatrix();
   }
 
   setTheme(theme) {
     if (!theme) return;
-    const col = theme.field || '#0a0a1e';
-    if (col !== this._themeCol) { this._themeCol = col; this.scene.background = new THREE.Color(col); }
+    const key = (theme.field || '') + '|' + (theme.accent2 || '') + '|' + (theme.accent || '');
+    if (key === this._themeKey) return;
+    this._themeKey = key;
+    // fresh vertical gradient: bright tinted top → deep bottom
+    const cv = document.createElement('canvas'); cv.width = 16; cv.height = 256;
+    const x = cv.getContext('2d');
+    const top = new THREE.Color(theme.accent2 || '#7be0ff').lerp(new THREE.Color(0xffffff), 0.16).getStyle();
+    const mid = new THREE.Color(theme.accent || '#4a6abf').lerp(new THREE.Color(0x141a3a), 0.35).getStyle();
+    const bot = new THREE.Color(theme.field || '#10142e').lerp(new THREE.Color(0xffffff), 0.08).getStyle();
+    const g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, top); g.addColorStop(0.5, mid); g.addColorStop(1, bot);
+    x.fillStyle = g; x.fillRect(0, 0, 16, 256);
+    const tex = new THREE.CanvasTexture(cv);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    if (this.scene.background && this.scene.background.isTexture) this.scene.background.dispose();
+    this.scene.background = tex;
   }
 
   sync(board, cur, ghostY) {

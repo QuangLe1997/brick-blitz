@@ -45,7 +45,7 @@ export class GameScene {
     // geometry
     this.COLS = BOARD.cols; this.ROWS = BOARD.rows; this.CELL = BOARD.cell;
     this.FX = Math.round((PLAY_AREA.width - this.COLS * this.CELL) / 2);
-    this.FY = 84;
+    this.FY = 26;
     this._buildCellCache();
 
     // real-3D board renderer (WebGL); falls back to the 2D canvas if it fails
