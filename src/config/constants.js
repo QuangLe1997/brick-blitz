@@ -18,21 +18,21 @@ export const COMBO_PTS = 50;     // × combo × level
 export const DIFFICULTY = {
   easy: {
     label: 'Easy',
-    dropBase: 1.05, dropFactor: 0.86, dropFloor: 0.14,
+    dropBase: 0.85, dropFactor: 0.85, dropFloor: 0.10,
     lockDelay: 0.55,
     coinReward: 0.7,
     startingBoosters: { hammer: 3, bomb: 2, freeze: 3 },
   },
   normal: {
     label: 'Normal',
-    dropBase: 0.85, dropFactor: 0.82, dropFloor: 0.07,
+    dropBase: 0.58, dropFactor: 0.82, dropFloor: 0.05,
     lockDelay: 0.5,
     coinReward: 1.0,
     startingBoosters: { hammer: 2, bomb: 1, freeze: 2 },
   },
   hard: {
     label: 'Hard',
-    dropBase: 0.62, dropFactor: 0.80, dropFloor: 0.045,
+    dropBase: 0.40, dropFactor: 0.80, dropFloor: 0.033,
     lockDelay: 0.42,
     coinReward: 1.4,
     startingBoosters: { hammer: 1, bomb: 1, freeze: 1 },

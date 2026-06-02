@@ -459,18 +459,31 @@ export class GameScene {
   _buildCellCache() {
     this._cellCache = {};
     const s = this.CELL;
+    const bev = Math.max(4, Math.round(s * 0.22)); // chunky bevel = strong 3D extrusion
     for (const key of Object.keys(METAL)) {
       const cv = document.createElement('canvas'); cv.width = s; cv.height = s;
       const c = cv.getContext('2d'); const m = METAL[key];
-      const g = c.createLinearGradient(0, 0, 0, s);
+      const poly = (pts, fill) => { c.fillStyle = fill; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fill(); };
+      // 4 bevel faces — top/left lit, right/bottom shaded → the block "pops"
+      poly([[0, 0], [s, 0], [s - bev, bev], [bev, bev]], m.light);              // top
+      poly([[0, 0], [bev, bev], [bev, s - bev], [0, s]], m.light);              // left
+      poly([[s, 0], [s, s], [s - bev, s - bev], [s - bev, bev]], m.dark);       // right
+      poly([[0, s], [bev, s - bev], [s - bev, s - bev], [s, s]], m.dark);       // bottom
+      // raised centre face — vertical metal gradient
+      const g = c.createLinearGradient(0, bev, 0, s - bev);
       g.addColorStop(0, m.light); g.addColorStop(0.5, m.mid); g.addColorStop(1, m.dark);
-      c.fillStyle = g; c.fillRect(0, 0, s, s);
-      c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(0, 0, s, 2); c.fillRect(0, 0, 2, s);
-      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(0, s - 2, s, 2); c.fillRect(s - 2, 0, 2, s);
-      c.save(); c.globalAlpha = 0.22; c.fillStyle = '#fff';
-      c.beginPath(); c.moveTo(s * 0.12, 0); c.lineTo(s * 0.42, 0); c.lineTo(s * 0.18, s); c.lineTo(0, s); c.closePath(); c.fill();
+      c.fillStyle = g; c.fillRect(bev, bev, s - 2 * bev, s - 2 * bev);
+      // diagonal chrome streak + specular dot on the centre
+      c.save();
+      c.beginPath(); c.rect(bev, bev, s - 2 * bev, s - 2 * bev); c.clip();
+      const iw = s - 2 * bev;
+      c.globalAlpha = 0.28; c.fillStyle = '#fff';
+      c.beginPath(); c.moveTo(bev + iw * 0.1, bev); c.lineTo(bev + iw * 0.42, bev); c.lineTo(bev + iw * 0.18, s - bev); c.lineTo(bev, s - bev); c.closePath(); c.fill();
+      c.globalAlpha = 0.7;
+      c.beginPath(); c.ellipse(bev + iw * 0.28, bev + iw * 0.26, iw * 0.16, iw * 0.1, -0.6, 0, Math.PI * 2); c.fill();
       c.restore();
-      c.strokeStyle = 'rgba(0,0,0,0.28)'; c.lineWidth = 1; c.strokeRect(0.5, 0.5, s - 1, s - 1);
+      // crisp outline for separation
+      c.globalAlpha = 1; c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 1; c.strokeRect(0.5, 0.5, s - 1, s - 1);
       this._cellCache[key] = cv;
     }
   }
