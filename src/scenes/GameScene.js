@@ -45,7 +45,7 @@ export class GameScene {
     // geometry
     this.COLS = BOARD.cols; this.ROWS = BOARD.rows; this.CELL = BOARD.cell;
     this.FX = Math.round((PLAY_AREA.width - this.COLS * this.CELL) / 2);
-    this.FY = 92;
+    this.FY = 84;
     this._buildCellCache();
 
     // real-3D board renderer (WebGL); falls back to the 2D canvas if it fails
@@ -323,23 +323,11 @@ export class GameScene {
       else if (k === 'ArrowUp' || k === 'x' || k === 'X') { if (!e.repeat) this._rotate(1); e.preventDefault(); }
       else if (k === 'z' || k === 'Z' || k === 'Control') { if (!e.repeat) this._rotate(-1); e.preventDefault(); }
       else if (k === ' ') { if (!e.repeat) this._hardDrop(); e.preventDefault(); }
-      else if (k === 'c' || k === 'C' || k === 'Shift') { if (!e.repeat) this._hold(); e.preventDefault(); }
       else if (k === 'p' || k === 'P' || k === 'Escape') { if (!e.repeat) (this.paused ? this.resume() : this.pause()); }
     });
 
-    const bind = (id, fn, repeat) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('pointerdown', (e) => { e.preventDefault(); AudioManager.resume(); if (repeat) this._startRepeat(fn); else fn(); });
-      if (repeat) { const stop = () => this._clearRepeat(); el.addEventListener('pointerup', stop); el.addEventListener('pointerleave', stop); el.addEventListener('pointercancel', stop); }
-    };
-    bind('btnLeft', () => this._move(-1), true);
-    bind('btnRight', () => this._move(1), true);
-    bind('btnSoft', () => this._softDrop(), true);
-    bind('btnRotate', () => this._rotate(1), false);
-    bind('btnHard', () => this._hardDrop(), false);
-    bind('btnHold', () => this._hold(), false);
-
+    // controls are touch/click gestures only (drag = move, tap = rotate,
+    // drag down = soft, flick down = hard) + keyboard on desktop.
     const canvas = this.canvas;
     const pos = (e) => { const r = canvas.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (PLAY_AREA.width / r.width), y: (t.clientY - r.top) * (PLAY_AREA.height / r.height) }; };
     let g = null;
@@ -534,8 +522,6 @@ export class GameScene {
     this.r3d.render(sx, sy);
     // 2D overlay (transparent, in front): side previews + effects
     ctx.save(); ctx.translate(sx, sy);
-    this._drawMiniBox(ctx, 10, this.FY + 6, 'HOLD', this.hold, this.holdUsed);
-    for (let i = 0; i < 3; i++) this._drawMiniBox(ctx, W - 72, this.FY + 6 + i * 60, i === 0 ? 'NEXT' : '', this.queue[i], false);
     if (this.slowTimer > 0) { ctx.fillStyle = 'rgba(120,215,240,0.06)'; ctx.fillRect(0, 0, W, H); }
     this.particles.draw(ctx);
     this.popups.draw(ctx);
@@ -570,8 +556,6 @@ export class GameScene {
       this._eachCell(this.cur.m, this.cur.x, this.cur.y, (bx, by) => { if (by >= 0) this._drawCell(ctx, this.cur.key, FX + bx * CELL, FY + by * CELL, CELL); });
     }
 
-    this._drawMiniBox(ctx, 10, FY + 6, 'HOLD', this.hold, this.holdUsed);
-    for (let i = 0; i < 3; i++) this._drawMiniBox(ctx, PLAY_AREA.width - 72, FY + 6 + i * 60, i === 0 ? 'NEXT' : '', this.queue[i], false);
 
     if (this.slowTimer > 0) { ctx.fillStyle = 'rgba(120,215,240,0.06)'; ctx.fillRect(0, 0, W, H); }
 

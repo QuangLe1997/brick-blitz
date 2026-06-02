@@ -1,7 +1,7 @@
 // The 7 tetrominoes + board geometry + a glossy-metal palette per piece.
 // Shapes are square 0/1 matrices (spawn orientation); rotation spins the matrix.
 
-export const BOARD = { cols: 10, rows: 20, cell: 28 };
+export const BOARD = { cols: 10, rows: 20, cell: 31 };
 
 export const SHAPES = {
   I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],

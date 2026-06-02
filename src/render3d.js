@@ -85,10 +85,10 @@ export class Renderer3D {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     // fit so the ROWS-tall board fills ~78% of the view height (matches the 2D layout)
-    const viewH = this.ROWS / 0.78;
+    const viewH = this.ROWS / 0.9;   // board fills ~90% of the height (no side panels now)
     const dist = (viewH / 2) / Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-    this.camera.position.set(0, 2.4, dist);
-    this.camera.lookAt(0, 0, 0); // slight downward tilt → cube tops show (real 3D)
+    this.camera.position.set(0, 3.4, dist);
+    this.camera.lookAt(0, 1.3, 0); // tilt to show cube tops; shift board down to clear the HUD
     this.camera.updateProjectionMatrix();
   }
 
