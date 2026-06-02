@@ -87,15 +87,17 @@ window.__BRICK__ = { SceneManager, gameScene, menuScene };
 async function boot() {
   await runSplash();
   SceneManager.switchTo('menu');
-  // unlock audio after first user gesture (browser policy)
+  // unlock audio on the first real user gesture (browser autoplay policy).
+  // Listen broadly (pointer/touch/click/key) and keep trying until the context
+  // is actually running — one missed event shouldn't leave the game silent.
+  const evs = ['pointerdown', 'touchend', 'click', 'keydown'];
   const unlock = () => {
-    AudioManager.resume();
-    AudioManager.startMusic();
-    window.removeEventListener('pointerdown', unlock);
-    window.removeEventListener('keydown', unlock);
+    AudioManager.unlock();
+    if (AudioManager.ctx && AudioManager.ctx.state === 'running') {
+      evs.forEach((ev) => window.removeEventListener(ev, unlock));
+    }
   };
-  window.addEventListener('pointerdown', unlock, { once: true });
-  window.addEventListener('keydown', unlock, { once: true });
+  evs.forEach((ev) => window.addEventListener(ev, unlock));
 
   loop(performance.now());
 }

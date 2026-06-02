@@ -36,6 +36,21 @@ class _AudioManager {
     }
   }
 
+  // Call from a real user gesture: resume the context, then (once it's actually
+  // running) start the ambient music. Starting oscillators while still
+  // suspended can stay silent on iOS, so we wait for resume to resolve.
+  unlock() {
+    this._ensureCtx();
+    if (!this.ctx) return;
+    const go = () => { if (this.settings.music && !this.musicOsc) this.startMusic(); };
+    if (this.ctx.state === 'suspended') {
+      const p = this.ctx.resume();
+      if (p && p.then) p.then(go).catch(() => {}); else go();
+    } else {
+      go();
+    }
+  }
+
   setSettings(s) {
     this.settings = { ...s };
     SaveManager.setSettings(this.settings);

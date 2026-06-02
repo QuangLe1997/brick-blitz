@@ -28,9 +28,11 @@ export class MenuScene {
 
     this.onboardEl = document.getElementById('onboard');
     document.getElementById('btnOnboard').addEventListener('click', () => {
+      AudioManager.unlock();
       AudioManager.playClick();
       SaveManager.save('brick_onboarded_v1', true);
       this.onboardEl.classList.add('hidden');
+      this.el.classList.remove('hidden');   // now reveal the menu
     });
 
     document.getElementById('btnStatsClose').addEventListener('click', () => {
@@ -48,13 +50,15 @@ export class MenuScene {
   }
 
   enter() {
-    this.el.classList.remove('hidden');
-    AudioManager.resume();
-    AudioManager.startMusic();
+    AudioManager.unlock();   // resume + start music (only audible once a gesture has unlocked audio)
     this._refresh();
-    // first-run how-to-play
+    // first-run how-to-play shows ALONE (menu stays hidden behind it so the two
+    // screens never overlap); the menu is revealed when the user dismisses it.
     if (!SaveManager.load('brick_onboarded_v1', false)) {
+      this.el.classList.add('hidden');
       this.onboardEl.classList.remove('hidden');
+    } else {
+      this.el.classList.remove('hidden');
     }
   }
 
@@ -142,6 +146,7 @@ export class MenuScene {
   }
 
   _onPlay() {
+    AudioManager.unlock();
     AudioManager.playClick();
     this._mgr.switchTo('game');
   }

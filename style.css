@@ -894,9 +894,21 @@ html, body {
 }
 
 /* DIALOGS ---------------------------------------------------- */
+/* Modal dialogs must fully cover the menu behind them (some mobile browsers
+   don't composite backdrop-filter, so use an opaque scrim + higher z-index). */
+#onboard, #stats, #settings, #daily {
+  z-index: 30;
+  background:
+    radial-gradient(90% 60% at 18% 8%, rgba(255, 95, 162, 0.16), transparent 60%),
+    radial-gradient(80% 60% at 88% 18%, rgba(92, 200, 255, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(11, 7, 28, 0.965), rgba(8, 5, 20, 0.99));
+}
 .dialog {
   position: relative;
   width: min(384px, 100%);
+  max-height: calc(100dvh - 28px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background:
     linear-gradient(180deg, rgba(74, 43, 138, 0.92), rgba(24, 16, 58, 0.96));
   border: 1px solid var(--glass-strong);
@@ -905,7 +917,6 @@ html, body {
   box-shadow: var(--shadow-card), var(--shadow-deep);
   text-align: center;
   animation: pop-in 0.34s cubic-bezier(0.17, 0.85, 0.4, 1.55) both;
-  overflow: hidden;
 }
 
 .dialog::before {
