@@ -2,6 +2,7 @@
 // (theme backgrounds + the coin sprite). Eggs are drawn procedurally.
 
 import { THEMES } from '../config/themes.js';
+import { BLOCK_SRC } from '../config/pieces.js';
 
 export const COIN_SRC = 'assets/images/coin.png';
 export const MENU_BG = 'assets/images/menu-bg.webp';
@@ -15,7 +16,7 @@ class _AssetManager {
 
   // Resolves when all images are loaded (or errored). onProgress(loaded,total).
   preload(onProgress) {
-    const paths = [COIN_SRC, MENU_BG, ...THEMES.map((t) => t.bg)];
+    const paths = [COIN_SRC, MENU_BG, ...THEMES.map((t) => t.bg), ...Object.values(BLOCK_SRC)];
     const total = paths.length;
     let loaded = 0;
 

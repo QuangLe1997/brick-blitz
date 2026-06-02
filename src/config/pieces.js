@@ -15,6 +15,12 @@ export const SHAPES = {
 
 export const PIECE_KEYS = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 
+// AI-generated glossy chrome block sprites (one per piece); rendered per cell.
+export const BLOCK_SRC = {
+  I: 'assets/blocks/I.png', O: 'assets/blocks/O.png', T: 'assets/blocks/T.png',
+  S: 'assets/blocks/S.png', Z: 'assets/blocks/Z.png', J: 'assets/blocks/J.png', L: 'assets/blocks/L.png',
+};
+
 // Each piece is a brushed-metal bar tinted with its hue.
 // light/mid/dark drive the bevel gradient; glow is for particles/edges.
 export const METAL = {

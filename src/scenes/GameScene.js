@@ -3,7 +3,7 @@
 // line clears + combo, ghost piece, hold, next-queue, glossy-metal rendering.
 
 import { PLAY_AREA, DIFFICULTY, LINES_PER_LEVEL, LINE_SCORE, SOFT_DROP_PTS, HARD_DROP_PTS, COMBO_PTS } from '../config/constants.js';
-import { BOARD, SHAPES, PIECE_KEYS, METAL, KICKS, rotateCW, rotateCCW } from '../config/pieces.js';
+import { BOARD, SHAPES, PIECE_KEYS, METAL, KICKS, BLOCK_SRC, rotateCW, rotateCCW } from '../config/pieces.js';
 import { themeForLevel } from '../config/themes.js';
 import { ParticleSystem } from '../effects/Particles.js';
 import { PopupSystem } from '../effects/Popups.js';
@@ -488,6 +488,35 @@ export class GameScene {
     }
   }
 
+  // prefer the AI chrome sprite; fall back to the procedural cube until it loads
+  _blockImg(key) {
+    const src = BLOCK_SRC[key];
+    const img = src && AssetManager.get(src);
+    return (img && img.complete && img.naturalWidth) ? img : this._cellCache[key];
+  }
+  // each cell = a brick one layer thick: a glossy top face + extruded right/bottom
+  // depth faces (toward bottom-right). Packed cells hide internal depth, so the
+  // stack reads as a solid 3D brick wall; exposed edges show the thickness.
+  _drawCell(ctx, key, px, py, size) {
+    const m = METAL[key];
+    const d = Math.max(3, Math.round(size * 0.22)); // brick thickness
+    // right depth face
+    ctx.fillStyle = m.dark;
+    ctx.beginPath();
+    ctx.moveTo(px + size, py); ctx.lineTo(px + size + d, py + d);
+    ctx.lineTo(px + size + d, py + size + d); ctx.lineTo(px + size, py + size);
+    ctx.closePath(); ctx.fill();
+    // bottom depth face (darker)
+    ctx.beginPath();
+    ctx.moveTo(px, py + size); ctx.lineTo(px + size, py + size);
+    ctx.lineTo(px + size + d, py + size + d); ctx.lineTo(px + d, py + size + d);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+    ctx.fill(); // darken the bottom face (reuses the path above)
+    // glossy top face
+    ctx.drawImage(this._blockImg(key), px, py, size, size);
+  }
+
   draw(ctx) {
     const W = PLAY_AREA.width, H = PLAY_AREA.height;
     this._drawBackground(ctx, W, H);
@@ -504,14 +533,14 @@ export class GameScene {
     for (let r = 1; r < this.ROWS; r++) { ctx.moveTo(FX, FY + r * CELL); ctx.lineTo(FX + fw, FY + r * CELL); }
     ctx.stroke();
 
-    for (let r = 0; r < this.ROWS; r++) for (let c = 0; c < this.COLS; c++) { const k = this.board[r][c]; if (k) ctx.drawImage(this._cellCache[k], FX + c * CELL, FY + r * CELL); }
+    for (let r = 0; r < this.ROWS; r++) for (let c = 0; c < this.COLS; c++) { const k = this.board[r][c]; if (k) this._drawCell(ctx, k, FX + c * CELL, FY + r * CELL, CELL); }
 
     if (this.cur && !this.gameOver) {
       const gy = this._ghostY();
       ctx.save(); ctx.globalAlpha = 0.28; ctx.strokeStyle = METAL[this.cur.key].glow; ctx.lineWidth = 2;
       this._eachCell(this.cur.m, this.cur.x, gy, (bx, by) => { if (by >= 0) ctx.strokeRect(FX + bx * CELL + 1.5, FY + by * CELL + 1.5, CELL - 3, CELL - 3); });
       ctx.restore();
-      this._eachCell(this.cur.m, this.cur.x, this.cur.y, (bx, by) => { if (by >= 0) ctx.drawImage(this._cellCache[this.cur.key], FX + bx * CELL, FY + by * CELL); });
+      this._eachCell(this.cur.m, this.cur.x, this.cur.y, (bx, by) => { if (by >= 0) this._drawCell(ctx, this.cur.key, FX + bx * CELL, FY + by * CELL, CELL); });
     }
 
     this._drawMiniBox(ctx, 10, FY + 6, 'HOLD', this.hold, this.holdUsed);
@@ -541,7 +570,7 @@ export class GameScene {
       const innerH = label ? bh - 16 : bh;
       const ox = bx + (bw - pw) / 2, oy = top + (innerH - ph) / 2;
       ctx.globalAlpha = dim ? 0.4 : 1;
-      for (let y = 0; y < m.length; y++) for (let x = 0; x < m.length; x++) if (m[y][x]) ctx.drawImage(this._cellCache[key], ox + (x - minx) * s, oy + (y - miny) * s, s, s);
+      for (let y = 0; y < m.length; y++) for (let x = 0; x < m.length; x++) if (m[y][x]) this._drawCell(ctx, key, ox + (x - minx) * s, oy + (y - miny) * s, s);
     }
     ctx.restore();
   }
