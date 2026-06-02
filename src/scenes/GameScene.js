@@ -83,7 +83,7 @@ export class GameScene {
     AudioManager.resume();
     AudioManager.startMusic();
   }
-  exit() { this.hudEl.classList.add('hidden'); this.pauseEl.classList.add('hidden'); AudioManager.stopMusic(); this._clearRepeat(); }
+  exit() { this.hudEl.classList.add('hidden'); this.pauseEl.classList.add('hidden'); AudioManager.stopMusic(); this._clearRepeat(); this._clearSoftHold(); }
 
   _loadSettingsIntoUI() {
     const s = SaveManager.getSettings();
@@ -312,6 +312,16 @@ export class GameScene {
   // ---------- input ----------
   _clearRepeat() { if (this._repeat) { clearInterval(this._repeat); this._repeat = null; } }
   _startRepeat(fn) { this._clearRepeat(); fn(); this._repeat = setInterval(() => { if (!this.paused && !this.gameOver) fn(); }, 90); }
+  // press-and-hold (mobile): keep the finger down to make the piece fall fast
+  _startSoftHold() {
+    this._clearSoftHold();
+    this._softDrop();
+    this._softHold = setInterval(() => {
+      if (this.paused || this.gameOver || !this.cur) { this._clearSoftHold(); return; }
+      this._softDrop();
+    }, 45);
+  }
+  _clearSoftHold() { if (this._softHold) { clearInterval(this._softHold); this._softHold = null; } }
 
   _setupInput() {
     window.addEventListener('keydown', (e) => {
@@ -330,28 +340,38 @@ export class GameScene {
     // drag down = soft, flick down = hard) + keyboard on desktop.
     const canvas = this.canvas;
     const pos = (e) => { const r = canvas.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (PLAY_AREA.width / r.width), y: (t.clientY - r.top) * (PLAY_AREA.height / r.height) }; };
-    let g = null;
+    let g = null, holdTimer = null, holding = false;
+    const HOLD_MS = 160;        // press still for this long → fast auto soft-drop
+    const cancelHoldTimer = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
+    const stopHold = () => { cancelHoldTimer(); holding = false; this._clearSoftHold(); };
     canvas.addEventListener('pointerdown', (e) => {
       if (this.paused || this.gameOver) return;
       AudioManager.resume(); e.preventDefault();
       const p = pos(e); g = { sx: p.x, sy: p.y, lx: p.x, ly: p.y, t: performance.now(), moved: false };
+      // if the finger stays roughly still, start fast-dropping (hold to drop)
+      cancelHoldTimer();
+      holdTimer = setTimeout(() => { if (g && !g.moved) { holding = true; this._startSoftHold(); } }, HOLD_MS);
     }, { passive: false });
     canvas.addEventListener('pointermove', (e) => {
       if (!g || this.paused || this.gameOver) return;
       e.preventDefault(); const p = pos(e);
       while (p.x - g.lx >= this.CELL) { this._move(1); g.lx += this.CELL; g.moved = true; }
       while (p.x - g.lx <= -this.CELL) { this._move(-1); g.lx -= this.CELL; g.moved = true; }
-      while (p.y - g.ly >= this.CELL) { this._softDrop(); g.ly += this.CELL; g.moved = true; }
+      // a real drag/flick cancels the still-hold engage
+      if (Math.abs(p.x - g.sx) > 12 || (!holding && Math.abs(p.y - g.sy) > 12)) cancelHoldTimer();
+      // manual per-cell soft-drop only when not already auto-holding
+      if (!holding) { while (p.y - g.ly >= this.CELL) { this._softDrop(); g.ly += this.CELL; g.moved = true; } }
     }, { passive: false });
     const end = (e) => {
-      if (!g) return; const had = g; g = null;
+      if (!g) return; const had = g, wasHolding = holding; g = null; stopHold();
       if (this.paused || this.gameOver) return;
+      if (wasHolding) return;   // a hold gesture: don't also rotate / hard-drop
       const p = pos(e); const dx = p.x - had.sx, dy = p.y - had.sy, dt = performance.now() - had.t;
       if (!had.moved && Math.abs(dx) < 14 && Math.abs(dy) < 14 && dt < 250) this._rotate(1);
       else if (dy > 70 && dy > Math.abs(dx) * 1.4 && dt < 320) this._hardDrop();
     };
     window.addEventListener('pointerup', end, { passive: false });
-    window.addEventListener('pointercancel', () => { g = null; }, { passive: false });
+    window.addEventListener('pointercancel', () => { g = null; stopHold(); }, { passive: false });
   }
 
   // ---------- coins / wallet ----------
@@ -412,12 +432,12 @@ export class GameScene {
   }
 
   // ---------- pause / game over ----------
-  pause() { if (this.gameOver) return; this.paused = true; this._clearRepeat(); this.pauseEl.classList.remove('hidden'); AudioManager.stopMusic(); }
+  pause() { if (this.gameOver) return; this.paused = true; this._clearRepeat(); this._clearSoftHold(); this.pauseEl.classList.remove('hidden'); AudioManager.stopMusic(); }
   resume() { this.paused = false; this.pauseEl.classList.add('hidden'); AudioManager.startMusic(); }
 
   _triggerGameOver() {
     if (this.gameOver) return;
-    this.gameOver = true; this.cur = null; this._clearRepeat();
+    this.gameOver = true; this.cur = null; this._clearRepeat(); this._clearSoftHold();
     AudioManager.playGameOver(); this.shake.trigger(14, 0.6);
     EconomyManager.setBoosters(this.boosters);
     const isNew = SaveManager.setHighScore(this.mode, this.score);
