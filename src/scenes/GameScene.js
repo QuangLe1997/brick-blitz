@@ -14,6 +14,7 @@ import { SaveManager } from '../managers/SaveManager.js';
 import { EconomyManager } from '../managers/EconomyManager.js';
 import { AssetManager } from '../managers/AssetManager.js';
 import { ProgressManager } from '../managers/ProgressManager.js';
+import { Renderer3D } from '../render3d.js';
 
 export class GameScene {
   constructor() {
@@ -47,6 +48,13 @@ export class GameScene {
     this.FY = 92;
     this._buildCellCache();
 
+    // real-3D board renderer (WebGL); falls back to the 2D canvas if it fails
+    this.r3d = null;
+    try {
+      const c3d = document.getElementById('game3d');
+      if (c3d) { this.r3d = new Renderer3D(c3d); window.addEventListener('resize', () => { if (this.r3d) this.r3d.resize(); }); }
+    } catch (e) { console.warn('3D renderer unavailable — using 2D', e); this.r3d = null; }
+
     // pause / settings
     document.getElementById('btnPause').addEventListener('click', () => { AudioManager.playClick(); this.paused ? this.resume() : this.pause(); });
     document.getElementById('btnResume').addEventListener('click', () => { AudioManager.playClick(); this.resume(); });
@@ -69,6 +77,7 @@ export class GameScene {
   enter() {
     this.hudEl.classList.remove('hidden');
     this._closeBoostPanel();
+    if (this.r3d) this.r3d.resize();
     this._loadSettingsIntoUI();
     this._initNewGame();
     AudioManager.resume();
@@ -517,7 +526,25 @@ export class GameScene {
     ctx.drawImage(this._blockImg(key), px, py, size, size);
   }
 
+  _draw3D(ctx) {
+    const W = PLAY_AREA.width, H = PLAY_AREA.height;
+    const [sx, sy] = this.shake.getOffset();
+    this.r3d.setTheme(this.theme);
+    this.r3d.sync(this.board, this.cur, this.cur ? this._ghostY() : 0);
+    this.r3d.render(sx, sy);
+    // 2D overlay (transparent, in front): side previews + effects
+    ctx.save(); ctx.translate(sx, sy);
+    this._drawMiniBox(ctx, 10, this.FY + 6, 'HOLD', this.hold, this.holdUsed);
+    for (let i = 0; i < 3; i++) this._drawMiniBox(ctx, W - 72, this.FY + 6 + i * 60, i === 0 ? 'NEXT' : '', this.queue[i], false);
+    if (this.slowTimer > 0) { ctx.fillStyle = 'rgba(120,215,240,0.06)'; ctx.fillRect(0, 0, W, H); }
+    this.particles.draw(ctx);
+    this.popups.draw(ctx);
+    ctx.restore();
+    this.coinFly.draw(ctx);
+  }
+
   draw(ctx) {
+    if (this.r3d) { this._draw3D(ctx); return; }
     const W = PLAY_AREA.width, H = PLAY_AREA.height;
     this._drawBackground(ctx, W, H);
     const [sx, sy] = this.shake.getOffset();

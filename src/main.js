@@ -109,10 +109,9 @@ function loop(now) {
 
   SceneManager.update(dt);
 
-  // clear & draw
+  // clear transparent — the 3D WebGL canvas renders behind this 2D overlay
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#0a0524';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
   SceneManager.draw(ctx);
