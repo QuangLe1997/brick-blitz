@@ -86,10 +86,10 @@ export class Renderer3D {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     // fit so the ROWS-tall board fills ~78% of the view height (matches the 2D layout)
-    const viewH = this.ROWS / 0.97;  // fill almost the full height → small side padding
+    const viewH = this.ROWS / 0.965; // fill almost the full portrait height
     const dist = (viewH / 2) / Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-    this.camera.position.set(0, 2.6, dist);
-    this.camera.lookAt(0, 0.5, 0); // mild tilt to show cube tops, tiny downshift
+    this.camera.position.set(0, 2.0, dist);
+    this.camera.lookAt(0, 0.2, 0); // gentle tilt to show cube tops
     this.camera.updateProjectionMatrix();
   }
 

@@ -2,7 +2,7 @@
 
 export const PLAY_AREA = {
   width: 460,
-  height: 720,
+  height: 860,
 };
 
 export const LINES_PER_LEVEL = 10;

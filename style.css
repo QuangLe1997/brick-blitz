@@ -73,7 +73,7 @@ html, body {
   width: 100vw;
   height: 100vh;            /* fallback */
   height: 100dvh;
-  max-width: min(100vw, calc(100dvh * 0.62));
+  max-width: min(100vw, calc(100dvh * 0.535));
   margin: 0 auto;
   overflow: hidden;
   background: #070512;
