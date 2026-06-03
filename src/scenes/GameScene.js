@@ -322,6 +322,19 @@ export class GameScene {
     }, 45);
   }
   _clearSoftHold() { if (this._softHold) { clearInterval(this._softHold); this._softHold = null; } }
+  // is the pointer (PLAY_AREA coords) on the current falling piece? (with a small
+  // grab margin) — used so holding ON the piece grabs/moves it instead of fast-dropping
+  _pointerOnPiece(p, pad = 0) {
+    if (!this.cur) return false;
+    const m = this.cur.m;
+    for (let cy = 0; cy < m.length; cy++) for (let cx = 0; cx < m.length; cx++) {
+      if (!m[cy][cx]) continue;
+      const bx = this.FX + (this.cur.x + cx) * this.CELL;
+      const by = this.FY + (this.cur.y + cy) * this.CELL;
+      if (p.x >= bx - pad && p.x <= bx + this.CELL + pad && p.y >= by - pad && p.y <= by + this.CELL + pad) return true;
+    }
+    return false;
+  }
 
   _setupInput() {
     window.addEventListener('keydown', (e) => {
@@ -348,9 +361,12 @@ export class GameScene {
       if (this.paused || this.gameOver) return;
       AudioManager.resume(); e.preventDefault();
       const p = pos(e); g = { sx: p.x, sy: p.y, lx: p.x, ly: p.y, t: performance.now(), moved: false };
-      // if the finger stays roughly still, start fast-dropping (hold to drop)
+      // hold-to-fast-drop ONLY when pressing empty space — never on the piece
+      // itself, so grabbing it to slide left/right doesn't trigger a fast drop.
       cancelHoldTimer();
-      holdTimer = setTimeout(() => { if (g && !g.moved) { holding = true; this._startSoftHold(); } }, HOLD_MS);
+      if (!this._pointerOnPiece(p, this.CELL * 0.5)) {
+        holdTimer = setTimeout(() => { if (g && !g.moved) { holding = true; this._startSoftHold(); } }, HOLD_MS);
+      }
     }, { passive: false });
     canvas.addEventListener('pointermove', (e) => {
       if (!g || this.paused || this.gameOver) return;
