@@ -7,8 +7,9 @@ export const PLAY_AREA = {
 
 export const LINES_PER_LEVEL = 10;
 
-// base points per simultaneous line-clear (× level)
-export const LINE_SCORE = { 1: 100, 2: 300, 3: 500, 4: 800 };
+// base points per simultaneous line-clear (× level) — steep curve so clearing
+// many rows at once pays off in a big multiplied way ("gấp bội").
+export const LINE_SCORE = { 1: 100, 2: 300, 3: 700, 4: 1500 };
 export const SOFT_DROP_PTS = 1;  // per cell
 export const HARD_DROP_PTS = 2;  // per cell
 export const COMBO_PTS = 50;     // × combo × level

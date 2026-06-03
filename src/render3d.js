@@ -65,18 +65,19 @@ export class Renderer3D {
   _buildWell() {
     const w = this.COLS, h = this.ROWS;
     const back = new THREE.Mesh(
-      new THREE.PlaneGeometry(w + 0.7, h + 0.7),
-      new THREE.MeshStandardMaterial({ color: 0x24305e, metalness: 0.25, roughness: 0.8 })
+      new THREE.PlaneGeometry(w + 0.25, h + 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x222a48, metalness: 0.25, roughness: 0.82 })
     );
     back.position.set(0, 0, -0.85);
     this.group.add(back);
 
+    // slim side rails → the well sits almost edge-to-edge (less framing on mobile)
     const railMat = new THREE.MeshStandardMaterial({ color: 0x6c7fc8, metalness: 0.95, roughness: 0.18 });
-    const railGeo = new THREE.BoxGeometry(0.32, h + 0.9, 1.3);
-    const left = new THREE.Mesh(railGeo, railMat); left.position.set(-(w / 2) - 0.16, 0, -0.15); this.group.add(left);
-    const right = left.clone(); right.position.x = (w / 2) + 0.16; this.group.add(right);
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(w + 0.9, 0.32, 1.3), railMat);
-    floor.position.set(0, -(h / 2) - 0.16, -0.15); this.group.add(floor);
+    const railGeo = new THREE.BoxGeometry(0.1, h + 0.7, 1.3);
+    const left = new THREE.Mesh(railGeo, railMat); left.position.set(-(w / 2) - 0.05, 0, -0.15); this.group.add(left);
+    const right = left.clone(); right.position.x = (w / 2) + 0.05; this.group.add(right);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.14, 1.3), railMat);
+    floor.position.set(0, -(h / 2) - 0.07, -0.15); this.group.add(floor);
   }
 
   resize() {
@@ -101,9 +102,10 @@ export class Renderer3D {
     // fresh vertical gradient: bright tinted top → deep bottom
     const cv = document.createElement('canvas'); cv.width = 16; cv.height = 256;
     const x = cv.getContext('2d');
-    const top = new THREE.Color(theme.accent2 || '#7be0ff').lerp(new THREE.Color(0xffffff), 0.16).getStyle();
-    const mid = new THREE.Color(theme.accent || '#4a6abf').lerp(new THREE.Color(0x141a3a), 0.35).getStyle();
-    const bot = new THREE.Color(theme.field || '#10142e').lerp(new THREE.Color(0xffffff), 0.08).getStyle();
+    // muted / calmer gradient (softer on the eyes) — lerp further toward neutral dark
+    const top = new THREE.Color(theme.accent2 || '#7be0ff').lerp(new THREE.Color(0x2a3052), 0.55).getStyle();
+    const mid = new THREE.Color(theme.accent || '#4a6abf').lerp(new THREE.Color(0x141a32), 0.58).getStyle();
+    const bot = new THREE.Color(theme.field || '#10142e').lerp(new THREE.Color(0x0a0c18), 0.4).getStyle();
     const g = x.createLinearGradient(0, 0, 0, 256);
     g.addColorStop(0, top); g.addColorStop(0.5, mid); g.addColorStop(1, bot);
     x.fillStyle = g; x.fillRect(0, 0, 16, 256);

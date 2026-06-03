@@ -222,11 +222,16 @@ export class GameScene {
     const n = full.length;
     if (n === 0) { this.combo = -1; return; }
 
+    // the more rows at once, the bigger/denser the burst + a shockwave ring per row
+    const power = 2 + n * 2;
+    const accent = (this.theme && this.theme.accent2) || '#9bf6ff';
     for (const r of full) {
       const cy = this.FY + r * this.CELL + this.CELL / 2;
-      this.particles.flash(PLAY_AREA.width / 2, cy, 200, 'rgba(255,255,255,0.65)');
-      for (let c = 0; c < this.COLS; c++) { const key = this.board[r][c] || 'X'; this.particles.burst(this.FX + c * this.CELL + this.CELL / 2, cy, [METAL[key].glow, '#fff'], 3); }
+      this.particles.flash(PLAY_AREA.width / 2, cy, 200 + n * 70, 'rgba(255,255,255,0.7)');
+      this.particles.shockwave(PLAY_AREA.width / 2, cy, accent, 120 + n * 80, 3 + n);
+      for (let c = 0; c < this.COLS; c++) { const key = this.board[r][c] || 'X'; this.particles.burst(this.FX + c * this.CELL + this.CELL / 2, cy, [METAL[key].glow, '#fff'], power); }
     }
+    if (n >= 3) { const my = this.FY + full[0] * this.CELL; this.particles.confetti(PLAY_AREA.width / 2, my); }   // big clears rain confetti
     const fullSet = new Set(full);
     const kept = this.board.filter((_, r) => !fullSet.has(r));
     while (kept.length < this.ROWS) kept.unshift(Array(this.COLS).fill(null));

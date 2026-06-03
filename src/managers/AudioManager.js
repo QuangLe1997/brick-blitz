@@ -148,11 +148,13 @@ class _AudioManager {
   playLineClear(n = 1) {
     if (!this.settings.sfx) return;
     const notes = [523.25, 659.25, 783.99, 1046.5];
-    for (let i = 0; i < Math.min(n, 4); i++) setTimeout(() => this._tone({ freq: notes[i], type: 'triangle', dur: 0.16, decay: 0.15, vol: 0.26 }), i * 55);
+    // metal clank per row (shattering bars) + a bright musical accent on top
+    for (let i = 0; i < Math.min(n, 4); i++) setTimeout(() => { this._metalHit(0.4 + i * 0.18, 1.1 + i * 0.12); this._tone({ freq: notes[i], type: 'triangle', dur: 0.16, decay: 0.15, vol: 0.2 }); }, i * 55);
   }
   playTetris() {
     if (!this.settings.sfx) return;
-    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => setTimeout(() => this._tone({ freq: f, type: 'triangle', dur: 0.22, decay: 0.2, vol: 0.32 }), i * 70));
+    this._metalHit(1, 0.7);   // big anvil clang for a 4-line smash
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => setTimeout(() => { this._metalHit(0.5, 1.2 + i * 0.12); this._tone({ freq: f, type: 'triangle', dur: 0.22, decay: 0.2, vol: 0.26 }); }, i * 70));
     if (this.settings.vibe && navigator.vibrate) navigator.vibrate(60);
   }
 
