@@ -83,7 +83,7 @@ export class GameScene {
     AudioManager.resume();
     AudioManager.startMusic();
   }
-  exit() { this.hudEl.classList.add('hidden'); this.pauseEl.classList.add('hidden'); AudioManager.stopMusic(); this._clearRepeat(); this._clearSoftHold(); }
+  exit() { this.hudEl.classList.add('hidden'); this.pauseEl.classList.add('hidden'); AudioManager.stopMusic(); this._clearRepeat(); this._clearSoftHold(); this._cancelPendingRotate(); }
 
   _loadSettingsIntoUI() {
     const s = SaveManager.getSettings();
@@ -209,6 +209,7 @@ export class GameScene {
     AudioManager.playLock?.();
     this.shake.trigger(2.5, 0.1);
     this.cur = null;
+    this._cancelPendingRotate();   // don't let a queued tap-rotate hit the next piece
     this._clearLines();
     if (topOut) { this._triggerGameOver(); return; }
     this._spawn();
@@ -322,6 +323,7 @@ export class GameScene {
     }, 45);
   }
   _clearSoftHold() { if (this._softHold) { clearInterval(this._softHold); this._softHold = null; } }
+  _cancelPendingRotate() { if (this._pendingRotate) { clearTimeout(this._pendingRotate); this._pendingRotate = null; } }
   // is the pointer (PLAY_AREA coords) on the current falling piece? (with a small
   // grab margin) — used so holding ON the piece grabs/moves it instead of fast-dropping
   _pointerOnPiece(p, pad = 0) {
@@ -378,13 +380,31 @@ export class GameScene {
       // manual per-cell soft-drop only when not already auto-holding
       if (!holding) { while (p.y - g.ly >= this.CELL) { this._softDrop(); g.ly += this.CELL; g.moved = true; } }
     }, { passive: false });
+    // tap = rotate, double-tap = hard-drop. Rotate is deferred briefly so a
+    // second quick tap can cancel it and slam the piece down instead.
+    const DBL_MS = 190;
+    let lastTapT = 0, lastTapX = 0, lastTapY = 0;
     const end = (e) => {
       if (!g) return; const had = g, wasHolding = holding; g = null; stopHold();
       if (this.paused || this.gameOver) return;
       if (wasHolding) return;   // a hold gesture: don't also rotate / hard-drop
       const p = pos(e); const dx = p.x - had.sx, dy = p.y - had.sy, dt = performance.now() - had.t;
-      if (!had.moved && Math.abs(dx) < 14 && Math.abs(dy) < 14 && dt < 250) this._rotate(1);
-      else if (dy > 70 && dy > Math.abs(dx) * 1.4 && dt < 320) this._hardDrop();
+      const isTap = !had.moved && Math.abs(dx) < 14 && Math.abs(dy) < 14 && dt < 250;
+      if (isTap) {
+        const now = performance.now();
+        if (this._pendingRotate && now - lastTapT < DBL_MS && Math.abs(p.x - lastTapX) < 40 && Math.abs(p.y - lastTapY) < 40) {
+          this._cancelPendingRotate();          // second quick tap → double-tap
+          lastTapT = 0;
+          this._hardDrop();
+        } else {
+          this._cancelPendingRotate();
+          lastTapT = now; lastTapX = p.x; lastTapY = p.y;
+          this._pendingRotate = setTimeout(() => { this._pendingRotate = null; this._rotate(1); }, DBL_MS);
+        }
+      } else if (dy > 70 && dy > Math.abs(dx) * 1.4 && dt < 320) {
+        this._cancelPendingRotate();            // flick down → pure hard-drop (no rotate)
+        this._hardDrop();
+      }
     };
     window.addEventListener('pointerup', end, { passive: false });
     window.addEventListener('pointercancel', () => { g = null; stopHold(); }, { passive: false });
@@ -448,12 +468,12 @@ export class GameScene {
   }
 
   // ---------- pause / game over ----------
-  pause() { if (this.gameOver) return; this.paused = true; this._clearRepeat(); this._clearSoftHold(); this.pauseEl.classList.remove('hidden'); AudioManager.stopMusic(); }
+  pause() { if (this.gameOver) return; this.paused = true; this._clearRepeat(); this._clearSoftHold(); this._cancelPendingRotate(); this.pauseEl.classList.remove('hidden'); AudioManager.stopMusic(); }
   resume() { this.paused = false; this.pauseEl.classList.add('hidden'); AudioManager.startMusic(); }
 
   _triggerGameOver() {
     if (this.gameOver) return;
-    this.gameOver = true; this.cur = null; this._clearRepeat(); this._clearSoftHold();
+    this.gameOver = true; this.cur = null; this._clearRepeat(); this._clearSoftHold(); this._cancelPendingRotate();
     AudioManager.playGameOver(); this.shake.trigger(14, 0.6);
     EconomyManager.setBoosters(this.boosters);
     const isNew = SaveManager.setHighScore(this.mode, this.score);
