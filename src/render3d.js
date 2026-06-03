@@ -71,13 +71,11 @@ export class Renderer3D {
     back.position.set(0, 0, -0.85);
     this.group.add(back);
 
-    // slim side rails → the well sits almost edge-to-edge (less framing on mobile)
+    // NO side walls — the well runs edge-to-edge on mobile. Keep only a thin
+    // floor strip so the stack still reads as grounded.
     const railMat = new THREE.MeshStandardMaterial({ color: 0x6c7fc8, metalness: 0.95, roughness: 0.18 });
-    const railGeo = new THREE.BoxGeometry(0.1, h + 0.7, 1.3);
-    const left = new THREE.Mesh(railGeo, railMat); left.position.set(-(w / 2) - 0.05, 0, -0.15); this.group.add(left);
-    const right = left.clone(); right.position.x = (w / 2) + 0.05; this.group.add(right);
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.14, 1.3), railMat);
-    floor.position.set(0, -(h / 2) - 0.07, -0.15); this.group.add(floor);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.12, 1.3), railMat);
+    floor.position.set(0, -(h / 2) - 0.06, -0.15); this.group.add(floor);
   }
 
   resize() {
@@ -86,9 +84,13 @@ export class Renderer3D {
     const h = Math.max(1, Math.round(r.height) || 640);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
-    // fit so the ROWS-tall board fills ~78% of the view height (matches the 2D layout)
-    const viewH = this.ROWS / 0.965; // fill almost the full portrait height
-    const dist = (viewH / 2) / Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+    const tanV = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+    // distance that fits all ROWS vertically, and the one that makes COLS fill the
+    // FULL width (edge-to-edge). Use the larger so nothing is cropped — on phones the
+    // width term wins, so the well runs flush to both side walls.
+    const distH = (this.ROWS / 2 + 0.3) / tanV;
+    const distW = (this.COLS / 2 + 0.05) / (tanV * this.camera.aspect);
+    const dist = Math.max(distH, distW);
     this.camera.position.set(0, 2.0, dist);
     this.camera.lookAt(0, 0.2, 0); // gentle tilt to show cube tops
     this.camera.updateProjectionMatrix();
